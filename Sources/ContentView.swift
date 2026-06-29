@@ -40,9 +40,7 @@ struct ContentView: View {
                     .font(.title)
                     .foregroundStyle(.secondary)
             case .transactions:
-                Text("Transactions View (Coming Soon)")
-                    .font(.title)
-                    .foregroundStyle(.secondary)
+                TransactionsView()
             case .taxSimulator:
                 Text("Tax Simulator (Coming Soon)")
                     .font(.title)
