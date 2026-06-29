@@ -8,10 +8,12 @@ struct TransactionsView: View {
     // 2. Fetch all transactions, sorted by newest first
     @Query(sort: \Transaction.date, order: .reverse) private var transactions: [Transaction]
 
+    // 3. NEW: State variable to control the visibility of the Add Transaction sheet
+    @State private var isShowingAddSheet = false
+
     var body: some View {
         NavigationStack {
             List {
-                // 3. Loop through the transactions and display them
                 ForEach(transactions) { transaction in
                     VStack(alignment: .leading) {
                         HStack {
@@ -35,24 +37,26 @@ struct TransactionsView: View {
                     }
                     .padding(.vertical, 4)
                 }
-                // 4. Enable swipe-to-delete (or right-click delete on Mac)
                 .onDelete(perform: deleteTransactions)
             }
             .navigationTitle("Transactions")
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
+                    // 4. NEW: Update the button action to trigger the sheet
                     Button(action: {
-                        // We will trigger a sheet to add a transaction here in the next step
-                        print("Add button clicked")
+                        isShowingAddSheet = true
                     }) {
                         Label("Add Transaction", systemImage: "plus")
                     }
                 }
             }
+            // 5. NEW: Attach the sheet modifier directly to the List
+            .sheet(isPresented: $isShowingAddSheet) {
+                AddTransactionView()
+            }
         }
     }
 
-    // 5. The deletion logic
     private func deleteTransactions(offsets: IndexSet) {
         for index in offsets {
             modelContext.delete(transactions[index])
