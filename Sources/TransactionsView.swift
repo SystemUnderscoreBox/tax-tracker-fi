@@ -26,7 +26,7 @@ struct TransactionsView: View {
                         }
 
                         Text(
-                            "\(transaction.quantity, specifier: "%.4f") shares @ \(transaction.pricePerShare, specifier: "%.2f") €"
+                            "\(transaction.quantity, specifier: "%.0f") shares @ \(transaction.pricePerShare, specifier: "%.2f") €"
                         )
                         .font(.subheadline)
                         .foregroundStyle(.secondary)

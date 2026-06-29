@@ -1,8 +1,15 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
 @main
 struct TaxTrackerApp: App {
+
+    // Add this initialization block to force foreground application behavior
+    init() {
+        NSApplication.shared.setActivationPolicy(.regular)
+        NSApplication.shared.activate(ignoringOtherApps: true)
+    }
 
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
@@ -63,6 +70,7 @@ struct TaxTrackerApp: App {
         WindowGroup {
             ContentView()
         }
+        .defaultSize(width: 900, height: 600)
         .modelContainer(sharedModelContainer)
     }
 }

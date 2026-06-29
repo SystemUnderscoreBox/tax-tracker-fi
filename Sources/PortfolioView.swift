@@ -48,7 +48,7 @@ struct PortfolioView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(asset.name)
                                     .font(.headline)
-                                Text("\(asset.shares, specifier: "%.4f") shares")
+                                Text("\(asset.shares, specifier: "%.0f") shares")
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
                             }

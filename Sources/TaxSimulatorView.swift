@@ -71,7 +71,7 @@ struct TaxSimulatorView: View {
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
 
-                                Text("Sold: \(batch.sharesSold, specifier: "%.4f")")
+                                Text("Sold: \(batch.sharesSold, specifier: "%.0f")")
                                     .font(.caption)
 
                                 Text("Method: \(batch.bestMethod)")
