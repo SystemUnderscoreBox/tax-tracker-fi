@@ -2,35 +2,56 @@ import SwiftData
 import SwiftUI
 
 struct TaxSimulatorView: View {
-    // 1. Fetch all transactions to feed into the tax engine
+    // 1. We need the modelContext to save the new transaction
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \Transaction.date, order: .forward) private var transactions: [Transaction]
 
-    // 2. State variables for the user's simulation inputs
     @State private var selectedAsset: String = ""
     @State private var sellQuantity: Double = 0.0
     @State private var sellPricePerShare: Double = 0.0
     @State private var sellFees: Double = 0.0
     @State private var sellDate: Date = Date()
 
-    // 3. State variable to hold the result of the simulation
     @State private var simulationResult: TaxSimulationResult? = nil
 
-    // 4. A computed property to find all unique asset names in the portfolio
+    // 2. New state variables for user feedback
+    @State private var errorMessage: String? = nil
+    @State private var successMessage: String? = nil
+
     var uniqueAssets: [String] {
         let assets = transactions.map { $0.assetName }
         return Array(Set(assets)).sorted()
+    }
+
+    // 3. A computed property to calculate the max available shares for the currently selected asset
+    var maxAvailableShares: Double {
+        guard !selectedAsset.isEmpty else { return 0 }
+        let lots = TaxCalculator.calculateAvailableLots(for: selectedAsset, from: transactions)
+        return lots.reduce(0) { $0 + $1.remainingQuantity }
     }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section("Simulation Parameters") {
-                    // Picker dynamically lists only the assets you actually own
                     Picker("Select Asset", selection: $selectedAsset) {
                         Text("Select an asset").tag("")
                         ForEach(uniqueAssets, id: \.self) { asset in
                             Text(asset).tag(asset)
                         }
+                    }
+                    // Clear messages when you change the selected asset
+                    .onChange(of: selectedAsset) { oldValue, newValue in
+                        errorMessage = nil
+                        successMessage = nil
+                        simulationResult = nil
+                    }
+
+                    // Show the user how many shares they actually have
+                    if !selectedAsset.isEmpty {
+                        Text("Available to sell: \(maxAvailableShares, specifier: "%.0f") shares")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
 
                     TextField("Quantity to Sell", value: $sellQuantity, format: .number)
@@ -41,15 +62,25 @@ struct TaxSimulatorView: View {
                         "Planned Sell Date", selection: $sellDate, displayedComponents: .date)
                 }
 
+                // Display error or success messages directly above the run button
+                if let errorMessage = errorMessage {
+                    Text(errorMessage)
+                        .foregroundStyle(.red)
+                        .font(.callout)
+                }
+                if let successMessage = successMessage {
+                    Text(successMessage)
+                        .foregroundStyle(.green)
+                        .font(.callout)
+                }
+
                 Section {
                     Button("Run Simulation") {
                         runSimulation()
                     }
-                    // Prevent running the simulation if no asset is selected or quantity is 0
                     .disabled(selectedAsset.isEmpty || sellQuantity <= 0)
                 }
 
-                // 5. Only show the results section if a simulation has been run
                 if let result = simulationResult {
                     Section("Simulation Results") {
                         HStack {
@@ -58,11 +89,9 @@ struct TaxSimulatorView: View {
                             Spacer()
                             Text("\(result.totalTaxableProfit, specifier: "%.2f") €")
                                 .fontWeight(.bold)
-                                // Red for profit (taxes owed), Green for loss
                                 .foregroundStyle(result.totalTaxableProfit > 0 ? .red : .green)
                         }
 
-                        // 6. Display the breakdown for every batch of shares sold
                         ForEach(result.batchResults, id: \.originalBuyDate) { batch in
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(
@@ -83,6 +112,14 @@ struct TaxSimulatorView: View {
                             }
                             .padding(.vertical, 4)
                         }
+
+                        // 4. A button to convert the simulation into permanent data
+                        Button(action: saveSimulationAsTransaction) {
+                            Label("Save as Actual Sale", systemImage: "tray.and.arrow.down.fill")
+                                .fontWeight(.bold)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .padding(.top, 8)
                     }
                 }
             }
@@ -91,8 +128,19 @@ struct TaxSimulatorView: View {
         }
     }
 
-    // 7. The function that connects the UI to your TaxCalculator engine
     private func runSimulation() {
+        successMessage = nil
+
+        // 5. The Validation Check
+        if sellQuantity > maxAvailableShares {
+            errorMessage =
+                "Error: You only have \(String(format: "%.0f", maxAvailableShares)) shares available. Cannot sell \(String(format: "%.0f", sellQuantity))."
+            simulationResult = nil
+            return
+        }
+
+        errorMessage = nil
+
         simulationResult = TaxCalculator.simulateSale(
             assetName: selectedAsset,
             sellQuantity: sellQuantity,
@@ -101,5 +149,26 @@ struct TaxSimulatorView: View {
             sellDate: sellDate,
             allTransactions: transactions
         )
+    }
+
+    // 6. The Saving Logic
+    private func saveSimulationAsTransaction() {
+        let newSale = Transaction(
+            assetName: selectedAsset,
+            date: sellDate,
+            type: .sell,
+            pricePerShare: sellPricePerShare,
+            quantity: sellQuantity,
+            fees: sellFees
+        )
+
+        modelContext.insert(newSale)
+
+        // Reset the form so it is ready for the next simulation
+        simulationResult = nil
+        sellQuantity = 0.0
+        sellPricePerShare = 0.0
+        sellFees = 0.0
+        successMessage = "Sale saved to transactions successfully!"
     }
 }
