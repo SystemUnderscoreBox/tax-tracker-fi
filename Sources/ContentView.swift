@@ -36,9 +36,7 @@ struct ContentView: View {
             // The Main Content panel (changes based on what is selected in the sidebar)
             switch selectedTab {
             case .portfolio:
-                Text("Portfolio View (Coming Soon)")
-                    .font(.title)
-                    .foregroundStyle(.secondary)
+                PortfolioView()
             case .transactions:
                 TransactionsView()
             case .taxSimulator:

@@ -4,7 +4,6 @@ import SwiftUI
 @main
 struct TaxTrackerApp: App {
 
-    // We configure a shared model container to handle Dev vs Production data
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Transaction.self
@@ -17,10 +16,31 @@ struct TaxTrackerApp: App {
             do {
                 let container = try ModelContainer(
                     for: schema, configurations: [modelConfiguration])
+                let context = container.mainContext
 
-                // We will write a function later to inject fictional transactions here
-                // e.g., generating mock trades for Gofore or Nordnet Suomi Indeksi
-                // so you have immediate data to test the UI and tax algorithms.
+                // Generate a recent fictional purchase (under 10 years)
+                let techCorpBuy = Transaction(
+                    assetName: "TechCorp",
+                    date: Calendar.current.date(byAdding: .year, value: -3, to: Date()) ?? Date(),
+                    type: .buy,
+                    pricePerShare: 150.00,
+                    quantity: 50.0,
+                    fees: 8.0
+                )
+
+                // Generate an older fictional purchase (over 10 years to test hankintameno-olettama)
+                let globalIndexBuy = Transaction(
+                    assetName: "Global Index Fund",
+                    date: Calendar.current.date(byAdding: .year, value: -12, to: Date()) ?? Date(),
+                    type: .buy,
+                    pricePerShare: 45.00,
+                    quantity: 200.0,
+                    fees: 0.0
+                )
+
+                // Insert the fictional data into the development database
+                context.insert(techCorpBuy)
+                context.insert(globalIndexBuy)
 
                 return container
             } catch {
@@ -41,11 +61,8 @@ struct TaxTrackerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // This is the main view of the app.
-            // It will show an error right now because we haven't created it yet!
             ContentView()
         }
-        // This attaches our database configuration to the entire app
         .modelContainer(sharedModelContainer)
     }
 }
