@@ -45,9 +45,20 @@ struct TaxTrackerApp: App {
                     fees: 0.0
                 )
 
+                // Generate an older fictional purchase (over 10 years to test hankintameno-olettama)
+                let valmetBuy = Transaction(
+                    assetName: "Valmet",
+                    date: Calendar.current.date(byAdding: .year, value: -1, to: Date()) ?? Date(),
+                    type: .buy,
+                    pricePerShare: 21.18,
+                    quantity: 21.0,
+                    fees: 7.0
+                )
+
                 // Insert the fictional data into the development database
                 context.insert(techCorpBuy)
                 context.insert(globalIndexBuy)
+                context.insert(valmetBuy)
 
                 return container
             } catch {
