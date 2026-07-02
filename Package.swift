@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "tax-tracker-fi",
+    // TODO: You should expand here to support other, e.g. Linux.
     platforms: [
         .macOS(.v14)
     ],
